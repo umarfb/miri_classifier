@@ -1,0 +1,2 @@
+batch_size,dropout,final_dense_dim,gamma,learning_rate,regularization_l2,rnn_dim,loss,accuracy,f1,f1_macro
+32,0.2,25,0.0,0.0001,0.01,50,0.8814814686775208,0.7571428418159485,0.7562499642372131,0.7454545454545455
