@@ -13,26 +13,28 @@ from sklearn.metrics import f1_score
 from rnntools import rnntools
 import focal_loss
 import datetime as dt
-import sys
-
 import click
-# import coloredlogs
 
-
-
-# Create a GRU RNN model to take in mixed inputs
-def create_gru_model(rnn_input_shape, dnn_input_shape, output_shape, 
-                       rnn_dim, final_dense_dim, dropout, regularization, mask_value):
+def create_recurrent_model(rnn_input_shape, dnn_input_shape, output_shape, 
+                       rnn_dim, final_dense_dim, dropout, regularization, mask_value,
+                       use_gru_instead_of_lstm:bool=False):
     
     # Create RNN branch
     rnn_input = tf.keras.layers.Input(shape=(rnn_input_shape))
     x1 = tf.keras.layers.Masking(input_shape=rnn_input_shape,
                                   mask_value=mask_value)(rnn_input)
-    x1 = tf.keras.layers.GRU(rnn_dim, input_shape=rnn_input_shape,
+    if use_gru_instead_of_lstm:                                    
+        x1 = tf.keras.layers.GRU(rnn_dim, input_shape=rnn_input_shape,
+                              return_sequences=True)(x1)
+    else:
+        x1 = tf.keras.layers.LSTM(rnn_dim, input_shape=rnn_input_shape,
                               return_sequences=True)(x1)
     x1 = tf.keras.layers.Dropout(dropout)(x1)
     x1 = tf.keras.layers.BatchNormalization()(x1)
-    x1 = tf.keras.layers.GRU(rnn_dim)(x1)
+    if use_gru_instead_of_lstm:
+        x1 = tf.keras.layers.GRU(rnn_dim)(x1)
+    else:
+        x1 = tf.keras.layers.LSTM(rnn_dim)(x1)
     x1 = tf.keras.layers.Dropout(dropout)(x1)
     x1 = tf.keras.layers.BatchNormalization()(x1)
     x1 = tf.keras.models.Model(inputs=rnn_input, outputs=x1)
@@ -53,42 +55,9 @@ def create_gru_model(rnn_input_shape, dnn_input_shape, output_shape,
     
     return model
 
-# Create a LSTM RNN model to take in mixed inputs
-def create_lstm_model(rnn_input_shape, dnn_input_shape, output_shape, 
-                       rnn_dim, final_dense_dim, dropout, regularization, mask_value):
-    
-    # Create RNN branch
-    rnn_input = tf.keras.layers.Input(shape=(rnn_input_shape))
-    x1 = tf.keras.layers.Masking(input_shape=rnn_input_shape,
-                                  mask_value=mask_value)(rnn_input)
-    x1 = tf.keras.layers.LSTM(rnn_dim, input_shape=rnn_input_shape,
-                              return_sequences=True)(x1)
-    x1 = tf.keras.layers.Dropout(dropout)(x1)
-    x1 = tf.keras.layers.BatchNormalization()(x1)
-    x1 = tf.keras.layers.LSTM(rnn_dim)(x1)
-    x1 = tf.keras.layers.Dropout(dropout)(x1)
-    x1 = tf.keras.layers.BatchNormalization()(x1)
-    x1 = tf.keras.models.Model(inputs=rnn_input, outputs=x1)
-    
-    # Create DNN branch
-    dense_input = tf.keras.layers.Input(shape=(dnn_input_shape))
-    
-    # Combine the output of the two models
-    combined = tf.concat([x1.output, dense_input], axis=1)
-    x3 = tf.keras.layers.Dense(final_dense_dim, activation='sigmoid')(combined)
-    x3 = tf.keras.layers.Dropout(dropout)(x3)
-    x3 = tf.keras.layers.BatchNormalization()(x3)
-    x3 = tf.keras.layers.Dense(final_dense_dim, activation='sigmoid',
-                               kernel_regularizer=tf.keras.regularizers.l2(regularization))(x3)
-    x3 = tf.keras.layers.Dense(output_shape, activation='softmax')(x3)
-
-    model = tf.keras.models.Model(inputs=[x1.input, dense_input], outputs=x3)
-    
-    return model
 
 # Plot training history
 def plot_history(history):
-    
     # Plot training & validation loss values
     plt.figure(figsize=(7, 4.5))
     plt.plot(history.history['loss'], color='b')
@@ -119,8 +88,10 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
         time.minute
     )
 
+    # Create the folder if it does not exist
     root = 'trained_models/' + timestamp + save_file_suffix
-    os.makedirs(root)
+    if not os.path.exists(root):
+        os.makedirs(root)
 
     # Get start time of training
     train_start = dt.datetime.now()
@@ -151,15 +122,16 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
                                                         save_weights_only=True,
                                                         verbose=0)
 
-        if rnn_type == 'GRU':
-            model = create_gru_model(rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape, 
-                                    output_shape=output_shape, rnn_dim=rnn_dim, 
-                                    final_dense_dim=final_dense_dim, dropout=dropout, 
-                                    regularization=reg_l2, mask_value=mask_val)
-        elif rnn_type == 'LSTM':
-            model = create_lstm_model(rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape, 
-                                    output_shape=output_shape, rnn_dim=rnn_dim, 
-                                    final_dense_dim=final_dense_dim, dropout=dropout, regularization=reg_l2, mask_value=mask_val)
+        if rnn_type.upper() == 'GRU':
+            use_gru = True
+        elif rnn_type.upper() == 'LSTM':
+            use_gru = False
+        else:
+            raise Exception(f"Invalid rnn_type, valid values: GRU and LSTM, got: {rnn_type}")
+        
+        model = create_recurrent_model(rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape, 
+                                output_shape=output_shape, rnn_dim=rnn_dim, 
+                                final_dense_dim=final_dense_dim, dropout=dropout, regularization=reg_l2, mask_value=mask_val, use_gru_instead_of_lstm=use_gru)
 
 
         # Initialize optimizer, use the Adam optimizer
