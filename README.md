@@ -1,5 +1,6 @@
 # rnn-classifier
-A Recurrent Neural Network (RNN)  classifier designed to classify astronomical time-series data.
+
+A Recurrent Neural Network (RNN) classifier designed to classify astronomical time-series data.
 
 An example dataset is included in `data/sample_data`. The data contains examples of simulated time-series data with errors (noise), separated into two classes (class labels 0 and 1).
 
@@ -23,7 +24,7 @@ Within each configuration folder, there will be folders named according to the m
 To evaluate a grid trained models, run:
 
 ```
-python3 model_evaluation.py sample_data trained_models/2021-9-20-1037-gru-fl ['Class 0','Class 1']
+python3 model_evaluation.py sample_data trained_models/2021-9-20-1037-gru-fl '['Class 0','Class 1']'
 ```
 
 The `trained_models/2021-9-20-1037-gru-fl` is the folder where the trained model is saved, and `['Class 0','Class 1']` are the class labels (for a binary classification case).

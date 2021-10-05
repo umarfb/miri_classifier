@@ -15,6 +15,9 @@ import focal_loss
 import datetime as dt
 import sys
 
+import click
+# import coloredlogs
+
 
 
 # Create a GRU RNN model to take in mixed inputs
@@ -196,7 +199,7 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
 
         scores.append(score)
 
-    # Get time at end of training
+    # Get time at the end of training
     train_stop = dt.datetime.now()
     train_time = train_stop - train_start
     print('{} models trained in {} seconds'.format(len(param_grid), train_time.seconds))
@@ -213,10 +216,10 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
     # Write results to .csv file
     results.to_csv(root + '/training_results.csv', index=0)
 
-def main():
-
-    # Specify the directory where the training and validation data are stored
-    data_dir = sys.argv[1]
+@click.command()
+@click.argument("data_dir")
+def main(data_dir):
+    """data_dir: Specify the directory where the training and validation data are stored"""
 
     # Enable XLA
     tf.config.optimizer.set_jit(True)
@@ -271,8 +274,10 @@ def main():
 
     # Define parameters that won't change
     verbose, epochs = 1, 5
-    metrics = [tf.keras.metrics.CategoricalAccuracy(),
-    rnntools.f1]
+    
+    # Metrics to measure accuracy and f1 score
+    metrics = [tf.keras.metrics.CategoricalAccuracy(), rnntools.f1] 
+    
     # Make class weights to account for class imbalance
     y_labels = [np.argmax(y) for y in y_train]
     class_size = [y_labels.count(c) for c in np.unique(y_labels)]
