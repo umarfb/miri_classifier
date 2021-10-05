@@ -89,7 +89,7 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
     )
 
     # Create the folder if it does not exist
-    root = 'trained_models/' + timestamp + save_file_suffix
+    root = os.path.join('trained_models', timestamp, save_file_suffix)
     if not os.path.exists(root):
         os.makedirs(root)
 
@@ -111,11 +111,11 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
         fname = '_'.join(ps)
 
         # Create directory to save model results
-        subdir = '/{}'.format(fname)
-        os.makedirs(root + subdir + '/model_weights') # save model weights
+        # subdir = '/{}'.format(fname)
+        os.makedirs(os.path.join(root, fname, 'model_weights')) # save model weights
 
-        checkpoint_path = root + subdir + '/model_weights/training/cp.ckpt'
-        checkpoint_dir = os.path.dirname(checkpoint_path)
+        checkpoint_path = os.path.join(root, fname, 'model_weights/training/cp.ckpt')
+        # checkpoint_dir = os.path.dirname(checkpoint_path)
 
         # Create a callback that saves the model's weights
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
@@ -148,7 +148,7 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
 
         # Save plot
         plot = plot_history(history)
-        plot.savefig(root + subdir +  '/training_history_plot.pdf', dpi=300, bbox_inches='tight', format='pdf')
+        plot.savefig(os.path.join(root, fname,  'training_history_plot.pdf'), dpi=300, bbox_inches='tight', format='pdf')
 
         # Calculate macro f1 score
         f1_macro = f1_score(np.argmax(y_val, axis=1),
@@ -163,11 +163,11 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
                 'f1_macro':f1_macro}
 
         # Save trained model and weights
-        model.save(root + subdir +  '/trained_model.h5')
+        model.save(os.path.join(root, fname, 'trained_model.h5'))
 
         # Save model training history
         df = pd.DataFrame(history.history)
-        df.to_csv(root + subdir +  '/training_history.csv', index=None)
+        df.to_csv(os.path.join(root, fname, 'training_history.csv'), index=None)
 
         scores.append(score)
 
@@ -186,7 +186,7 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
     results = pd.DataFrame(results)
 
     # Write results to .csv file
-    results.to_csv(root + '/training_results.csv', index=0)
+    results.to_csv(os.path.join(root, 'training_results.csv'), index=0)
 
 @click.command()
 @click.argument("data_dir")
