@@ -241,10 +241,10 @@ def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
     logger.info(f"RNN input shape {rnn_input_shape}")
 
     dnn_input_shape = (X_train[1].shape[1])
-    print('Dense network input shape ', dnn_input_shape)
+    logger.info(f"Dense network input shape {dnn_input_shape}")
 
     output_shape = y_train.shape[1]
-    print('Output shape ', output_shape)
+    logger.info(f"Output shape {output_shape}")
 
     logger.info(f"Loading config file {config_yaml}...")
     config = yaml.load(open(config_yaml), Loader=yaml.FullLoader)
@@ -268,7 +268,7 @@ def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
 
     # Scale weights
     class_weights = np.array(class_weights) / len(list(class_weights))
-    print('Class weights: ', class_weights)
+    logger.info(f"Class weights: {class_weights}")
 
     # Convert to dictionary
     class_weights = dict(zip(np.unique(y_labels), np.array(class_weights)))
