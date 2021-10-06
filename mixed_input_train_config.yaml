@@ -1,0 +1,8 @@
+batch_sizes: [32]
+learning_rates: [1.e-4]
+rnn_dims: [25]
+dropouts: [0.5]
+reg_l2s: [0.01]
+final_dense_dims: [25]
+gammas: [1.0]
+mask_val: -99.
