@@ -116,7 +116,6 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
         fname = '_'.join(ps)
 
         # Create directory to save model results
-        # subdir = '/{}'.format(fname)
         os.makedirs(os.path.join(root, fname, 'model_weights'))  # save model weights
 
         checkpoint_path = os.path.join(root, fname, 'model_weights/training/cp.ckpt')
