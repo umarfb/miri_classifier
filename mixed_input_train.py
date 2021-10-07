@@ -119,7 +119,7 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
         os.makedirs(os.path.join(root, fname, 'model_weights'))  # save model weights
 
         checkpoint_path = os.path.join(root, fname, 'model_weights/training/cp.ckpt')
-        # checkpoint_dir = os.path.dirname(checkpoint_path)
+
 
         # Create a callback that saves the model's weights
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
