@@ -24,9 +24,9 @@ Within each configuration folder, there will be folders named according to the m
 To evaluate a grid trained models, run:
 
 ```
-python3 model_evaluation.py sample_data trained_models/2021-9-20-1037-gru-fl '['Class 0','Class 1']'
+python3 model_evaluation.py sample_data trained_models/2021-9-20-1037-gru-fl ['Class 0','Class 1']
 ```
 
-The `trained_models/2021-9-20-1037-gru-fl` is the folder where the trained model is saved, and `['Class 0','Class 1']` are the class labels (for a binary classification case).
+The `trained_models/2021-9-20-1037-gru-fl` is the folder where the trained model is saved, and `['Class 0','Class 1']` are the class labels (for a binary classification case). The labels need to be passed as a list of class labels within square parentheses separated by commas with no spaces, with each label enclosed within inverted commas ('). For example, ['Class 0', 'Class 1'], and [Class 0,Class 1] is incorrect. 
 
 This will evaluate the models, and tabulate the model hyperparameters with F1 score and accuracy into `experiment_results.csv` within the configuration folder. It will also create two confusion matrices (evaluated on the validation and test set). 
