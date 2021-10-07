@@ -265,7 +265,7 @@ def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
     class_size = [y_labels.count(c) for c in np.unique(y_labels)]
     class_weights = np.array([sum(class_size) / c for c in class_size])
 
-    # Scale weights
+    # Scale weights, divide by number of classes to make sure the values are not too large
     class_weights = np.array(class_weights) / len(list(class_weights))
     logger.info(f"Class weights: {class_weights}")
 
@@ -280,13 +280,15 @@ def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
                                    'final_dense_dim': final_dense_dims,
                                    'gamma': gammas})
 
+    # For the focal loss function, a gamma parameter of zero reduces the focal loss
+    # to the cross entropy loss function
     param_grid_ce = ParameterGrid({'batch_size': batch_sizes,
                                    'learning_rate': learning_rates,
                                    'rnn_dim': rnn_dims,
                                    'dropout': dropouts,
                                    'regularization_l2': reg_l2s,
                                    'final_dense_dim': final_dense_dims,
-                                   'gamma': [0.0]})
+                                   'gamma': [0.0]}) 
 
     # Train GRU models with focal loss
     train_model_grid(rnn_type='GRU', rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape,
