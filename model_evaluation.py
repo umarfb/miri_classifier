@@ -1,6 +1,7 @@
 '''
 Script to take a trained model and evaluate it on the validation set
 '''
+from typing import List
 import os
 import pandas as pd 
 import tensorflow as tf
@@ -12,8 +13,8 @@ import matplotlib.pyplot as plt
 import sys
 import click
 
-for arg in sys.argv:
-    print(arg)
+# for arg in sys.argv:
+#     print(arg)
 
 # Method to evaluate a model on test data
 def evaluate(model, X, y, batch_size, metrics):
@@ -110,27 +111,28 @@ def multi_roc(yp, yt):
     
     return roc_vs, roc_sn, roc_agn
 
-def main():
-    # Get directory where data is located
-    file_dir = sys.argv[1]
+@click.command()
+@click.option("-d", "--data-dir", required=True, help="Specify the directory where the data is stored")
+@click.option("-m", "--model_dir", required=True, help="Specify the directory where the model is stored")
+@click.option("-l", "--labels", required=True, multiple=True, help="Specify class labels - repeat this option for each class")
+def main(data_dir:str, model_dir:str, labels:List[str]):
 
     print("Loading data ...")
-    X_val_time = np.load('data/{}/validation_time_features.npy'.format(file_dir))
-    X_val_contextual = np.load('data/{}/validation_contextual_features.npy'.format(file_dir))
-    y_val = np.load('data/{}/validation_labels.npy'.format(file_dir))
+    X_val_time = np.load('data/{}/validation_time_features.npy'.format(data_dir))
+    X_val_contextual = np.load('data/{}/validation_contextual_features.npy'.format(data_dir))
+    y_val = np.load('data/{}/validation_labels.npy'.format(data_dir))
     X_val = (X_val_time, X_val_contextual)
 
-    X_test_time = np.load('data/{}/test_time_features.npy'.format(file_dir))
-    X_test_contextual = np.load('data/{}/test_contextual_features.npy'.format(file_dir))
-    y_test = np.load('data/{}/test_labels.npy'.format(file_dir))
+    X_test_time = np.load('data/{}/test_time_features.npy'.format(data_dir))
+    X_test_contextual = np.load('data/{}/test_contextual_features.npy'.format(data_dir))
+    y_test = np.load('data/{}/test_labels.npy'.format(data_dir))
     X_test = (X_test_time, X_test_contextual)
 
     # Get directory where trained models are saved
-    model_dir = sys.argv[2] + '/'
+    model_dir += '/'
     model_files = next(os.walk(model_dir))[1]
 
-    # Get class labels
-    labels = sys.argv[3].strip('[]').split(',')
+
     print(labels)
 
     # Define metrics
