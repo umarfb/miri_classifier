@@ -42,7 +42,7 @@ def evaluate_model_time(y_true, y_pred, labels, save_dir, plot_title, save_plot=
     cm = rnntools.confusion_matrix(y_pred, y_true, labels, title=plot_title)
 
     if save_plot == True:
-        cm.savefig(save_dir + 'time-evaluation/CM_{}.png'.format(plot_title[8:]), format='png', dpi=300, bbox_inches='tight')
+        cm.savefig(os.path.join(save_dir, 'time-evaluation/CM_{}.png').format(plot_title[8:]), format='png', dpi=300, bbox_inches='tight')
 
     return f1, accuracy
 
@@ -150,8 +150,8 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
         params = get_params(m)
 
         # Define path to models
-        model_path = model_dir + m + '/trained_model.h5'
-        weights_path = model_dir + m + '/model_weights/training/cp.ckpt'
+        model_path = os.path.join(model_dir, m, 'trained_model.h5')
+        weights_path = os.path.join(model_dir, m, 'model_weights/training/cp.ckpt')
         
         # Load model
         model = tf.keras.models.load_model(model_path, compile=False)
@@ -202,14 +202,14 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
         results.append(d)
 
     results = pd.DataFrame(results)
-    results.to_csv(model_dir + '/experiment_results.csv', index=None)
+    results.to_csv(os.path.join(model_dir, 'experiment_results.csv'), index=None)
 
     # Plot confusion matrix
     best_model = results.sort_values(by='auc_macro', ascending=False).iloc[0]
     best_model_name = [str(best_model[i]) for i in range(7)]
 
-    model_path = model_dir + '_'.join(best_model_name) + '/trained_model.h5'
-    weights_path = model_dir + '_'.join(best_model_name) + '/model_weights/training/cp.ckpt'
+    model_path = os.path.join(model_dir, '_'.join(best_model_name), 'trained_model.h5')
+    weights_path = os.path.join(model_dir, '_'.join(best_model_name), 'model_weights/training/cp.ckpt')
 
     m_best = tf.keras.models.load_model(model_path, compile=False)
 
@@ -229,12 +229,12 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
     # Predict validation set
     y_pred_val = m_best.predict(X_val)
     cm = rnntools.confusion_matrix(y_pred_val, y_val, labels)
-    cm.savefig(model_dir +'/{}class-confusion-matrix-val.pdf'.format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
+    cm.savefig(os.path.join(model_dir, '{}class-confusion-matrix-val.pdf').format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
 
     # Predict test set
     y_pred_test = m_best.predict(X_test)
     cm = rnntools.confusion_matrix(y_pred_test, y_test, labels)
-    cm.savefig(model_dir +'/{}class-confusion-matrix-test.pdf'.format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
+    cm.savefig(os.path.join(model_dir, '{}class-confusion-matrix-test.pdf').format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
 
 if __name__ == "__main__":
     main()
