@@ -10,6 +10,7 @@ import focal_loss
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score, roc_curve
 import matplotlib.pyplot as plt
 import sys
+import click
 
 for arg in sys.argv:
     print(arg)
@@ -23,7 +24,7 @@ def evaluate(model, X, y, batch_size, metrics):
     score = {'loss':performance[0],
              'accuracy':performance[1],
              'f1_score':performance[2]}
-    
+
     return score
 
 # Method to make predictions, and save performanc metrics, takes in outputs of prediction probabilities
@@ -109,120 +110,129 @@ def multi_roc(yp, yt):
     
     return roc_vs, roc_sn, roc_agn
 
-# Get directory where data is located
-file_dir = sys.argv[1]
+def main():
+    # Get directory where data is located
+    file_dir = sys.argv[1]
 
-print("Loading data ...")
-X_val_time = np.load('data/{}/validation_time_features.npy'.format(file_dir))
-X_val_contextual = np.load('data/{}/validation_contextual_features.npy'.format(file_dir))
-y_val = np.load('data/{}/validation_labels.npy'.format(file_dir))
-X_val = (X_val_time, X_val_contextual)
+    print("Loading data ...")
+    X_val_time = np.load('data/{}/validation_time_features.npy'.format(file_dir))
+    X_val_contextual = np.load('data/{}/validation_contextual_features.npy'.format(file_dir))
+    y_val = np.load('data/{}/validation_labels.npy'.format(file_dir))
+    X_val = (X_val_time, X_val_contextual)
 
-X_test_time = np.load('data/{}/test_time_features.npy'.format(file_dir))
-X_test_contextual = np.load('data/{}/test_contextual_features.npy'.format(file_dir))
-y_test = np.load('data/{}/test_labels.npy'.format(file_dir))
-X_test = (X_test_time, X_test_contextual)
+    X_test_time = np.load('data/{}/test_time_features.npy'.format(file_dir))
+    X_test_contextual = np.load('data/{}/test_contextual_features.npy'.format(file_dir))
+    y_test = np.load('data/{}/test_labels.npy'.format(file_dir))
+    X_test = (X_test_time, X_test_contextual)
 
-# Get directory where trained models are saved
-model_dir = sys.argv[2] + '/'
-model_files = next(os.walk(model_dir))[1]
+    # Get directory where trained models are saved
+    model_dir = sys.argv[2] + '/'
+    model_files = next(os.walk(model_dir))[1]
 
-# Get class labels
-labels = sys.argv[3].strip('[]').split(',')
-print(labels)
+    # Get class labels
+    labels = sys.argv[3].strip('[]').split(',')
+    print(labels)
 
-# Define metrics
-metrics = [tf.keras.metrics.CategoricalAccuracy(), tf.keras.metrics.AUC(),
-   rnntools.f1]
-
-# List to store evaluation results
-results = list()
-
-print(y_val.shape, y_val.shape[0], y_val.shape[1])
-
-for i, m in enumerate(model_files):
-    
-    # Get model parameters
-    params = get_params(m)
-
-    # Define path to models
-    model_path = model_dir + m + '/trained_model.h5'
-    weights_path = model_dir + m + '/model_weights/training/cp.ckpt'
-    
-    # Load model
-    model = tf.keras.models.load_model(model_path, compile=False)
-    
     # Define metrics
     metrics = [tf.keras.metrics.CategoricalAccuracy(), tf.keras.metrics.AUC(),
-   rnntools.f1]
+    rnntools.f1]
+
+    # List to store evaluation results
+    results = list()
+
+    print(y_val.shape, y_val.shape[0], y_val.shape[1])
+
+    for i, m in enumerate(model_files):
+        
+        # Get model parameters
+        params = get_params(m)
+
+        # Define path to models
+        model_path = model_dir + m + '/trained_model.h5'
+        weights_path = model_dir + m + '/model_weights/training/cp.ckpt'
+        
+        # Load model
+        model = tf.keras.models.load_model(model_path, compile=False)
+        
+        # Define metrics
+        metrics = [tf.keras.metrics.CategoricalAccuracy(), tf.keras.metrics.AUC(), rnntools.f1]
+
+        # Compile model
+        model.compile(optimizer=tf.keras.optimizers.Adam(),
+                loss=focal_loss.FocalCrossEntropy(),
+                metrics=metrics)
+        
+        # Load model weights
+        # Expect_partial would silence the warnings.         
+        # There are warnings because we are restoring a model that has training information but we are using it only for prediction and not training.
+        model.load_weights(weights_path).expect_partial() 
+
+        
+        
+        # Evaluate model on validation set
+        model_eval = rnntools.evaluate_model(model, X_val, y_val, batch_size=128, verbose=1)
+        
+        # Calculate macro f1 score
+        f1_macro = f1_score(np.argmax(y_val, axis=1),
+                            np.argmax(model.predict(X_val), axis=1),
+                            average='macro')
+        
+        # Calulcate area under ROC curve
+
+        if y_val.shape[1] == 2:
+            auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
+                                model.predict(X_val)[:,0])
+
+        else: 
+            auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
+                                model.predict(X_val),
+                                average='macro', multi_class='ovo')
+            
+        # Get evaluation scores
+        scores = {'loss':model_eval[0],
+                'categorical_accuracy':model_eval[1],
+                'f1':model_eval[2],
+                'f1_macro':f1_macro,
+                'auc_macro':auc_macro,
+    }
+        
+        d = {**params, **scores}
+        results.append(d)
+
+    results = pd.DataFrame(results)
+    results.to_csv(model_dir + '/experiment_results.csv', index=None)
+
+    # Plot confusion matrix
+    best_model = results.sort_values(by='auc_macro', ascending=False).iloc[0]
+    best_model_name = [str(best_model[i]) for i in range(7)]
+
+    model_path = model_dir + '_'.join(best_model_name) + '/trained_model.h5'
+    weights_path = model_dir + '_'.join(best_model_name) + '/model_weights/training/cp.ckpt'
+
+    m_best = tf.keras.models.load_model(model_path, compile=False)
 
     # Compile model
-    model.compile(optimizer=tf.keras.optimizers.Adam(),
-              loss=focal_loss.FocalCrossEntropy(),
-              metrics=metrics)
-    
+    m_best.compile(optimizer=tf.keras.optimizers.Adam(),
+            loss=focal_loss.FocalCrossEntropy(),
+            metrics=metrics)
+
     # Load model weights
-    model.load_weights(weights_path)
-    
-    # Evaluate model on validation set
-    model_eval = rnntools.evaluate_model(model, X_val, y_val, batch_size=128, verbose=1)
-    
-    # Calculate macro f1 score
-    f1_macro = f1_score(np.argmax(y_val, axis=1),
-                        np.argmax(model.predict(X_val), axis=1),
-                        average='macro')
-    
-    # Calulcate area under ROC curve
+    # Expect_partial would silence the warnings.  
+    # A better solution would be to only save the variables required for inference when training: saver = tf.train.Saver(tf.model_variables())  
+    m_best.load_weights(weights_path).expect_partial() 
 
-    if y_val.shape[1] == 2:
-        auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
-                            model.predict(X_val)[:,0])
+    # Predict validation set
+    y_pred = m_best.predict(X_val)
 
-    else: 
-        auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
-                            model.predict(X_val),
-                            average='macro', multi_class='ovo')
-        
-    # Get evaluation scores
-    scores = {'loss':model_eval[0],
-             'categorical_accuracy':model_eval[1],
-             'f1':model_eval[2],
-             'f1_macro':f1_macro,
-             'auc_macro':auc_macro,
-}
-    
-    d = {**params, **scores}
-    results.append(d)
+    # Predict validation set
+    y_pred_val = m_best.predict(X_val)
+    cm = rnntools.confusion_matrix(y_pred_val, y_val, labels)
+    cm.savefig(model_dir +'/{}class-confusion-matrix-val.pdf'.format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
 
-results = pd.DataFrame(results)
-results.to_csv(model_dir + '/experiment_results.csv', index=None)
+    # Predict test set
+    y_pred_test = m_best.predict(X_test)
+    cm = rnntools.confusion_matrix(y_pred_test, y_test, labels)
+    cm.savefig(model_dir +'/{}class-confusion-matrix-test.pdf'.format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
 
-# Plot confusion matrix
-best_model = results.sort_values(by='auc_macro', ascending=False).iloc[0]
-best_model_name = [str(best_model[i]) for i in range(7)]
-
-model_path = model_dir + '_'.join(best_model_name) + '/trained_model.h5'
-weights_path = model_dir + '_'.join(best_model_name) + '/model_weights/training/cp.ckpt'
-
-m_best = tf.keras.models.load_model(model_path, compile=False)
-
-# Compile model
-m_best.compile(optimizer=tf.keras.optimizers.Adam(),
-          loss=focal_loss.FocalCrossEntropy(),
-          metrics=metrics)
-
-# Load model weights
-m_best.load_weights(weights_path)
-
-# Predict validation set
-y_pred = m_best.predict(X_val)
-
-# Predict validation set
-y_pred_val = m_best.predict(X_val)
-cm = rnntools.confusion_matrix(y_pred_val, y_val, labels)
-cm.savefig(model_dir +'/{}class-confusion-matrix-val.pdf'.format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
-
-# Predict test set
-y_pred_test = m_best.predict(X_test)
-cm = rnntools.confusion_matrix(y_pred_test, y_test, labels)
-cm.savefig(model_dir +'/{}class-confusion-matrix-test.pdf'.format(y_val.shape[1]), format='pdf', dpi=300, bbox_inches='tight')
+if __name__ == "__main__":
+    main()
