@@ -16,34 +16,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("model_evaluation")
 
-# # Method to evaluate a model on test data
-# def evaluate(model, X, y, batch_size):
-#     performance = rnntools.evaluate_model(model, X, y, batch_size)
-
-#     # Add performance metrics to a dictionary
-#     score = {'loss':performance[0],
-#              'accuracy':performance[1],
-#              'f1_score':performance[2]}
-
-#     return score
-
-# # Method to make predictions, and save performanc metrics, takes in outputs of prediction probabilities
-# def evaluate_model_time(y_true, y_pred, labels, save_dir, plot_title, save_plot=False):
-#     yt = y_true.argmax(axis=1)
-#     yp = y_pred.argmax(axis=1)
-
-#     # Calculate accuracy and f1-score
-#     f1 = f1_score(yt, yp, average='weighted')
-#     accuracy = accuracy_score(yt, yp)
-
-#     # Create confusion matrix
-#     cm = rnntools.confusion_matrix(y_pred, y_true, labels, title=plot_title)
-
-#     if save_plot == True:
-#         cm.savefig(os.path.join(save_dir, 'time-evaluation/CM_{}.png').format(plot_title[8:]), format='png', dpi=300, bbox_inches='tight')
-
-#     return f1, accuracy
-
 # Method to get model parameters
 def get_params(name):
     param_vals = name.split('_')
@@ -59,51 +31,6 @@ def get_params(name):
     params = {param_names[i]:param_vals[i] for i in range(len(param_vals))}
     
     return params
-
-# # Method to preprocess data so that only a given number of epochs is retained
-# def format_epoch(X, n_epochs, maxlen, mask_value=-99.0):
-#     N = int(n_epochs)
-    
-#     if N > maxlen:
-#         print('Error: number of epochs specified greater than maximum length of input time sequence, {} > {}'.format(N, maxlen))
-#         return
-    
-#     X = list(X)
-#     X_epoch = [x[~(x[:,0] < 0)][:n_epochs] for x in X]
-
-#     X_formatted = tf.keras.preprocessing.sequence.pad_sequences(X_epoch, padding='pre', value=mask_value,
-#                                                                  dtype='float32', maxlen=maxlen)
-    
-#     return X_formatted
-
-# def multi_roc(yp, yt):
-#     # Get binary outputs for VS classification
-#     vs = yp[:,0]
-#     vs_probs = np.array([[p, 1-p] for p in vs])
-#     yt_vs = np.argmax(yt, axis=1)
-#     yt_vs[yt_vs >= 1] = 1
-#     vs_labels = yt_vs^1
-    
-#     # Get binary outputs for SN classification
-#     sn = yp[:,1]
-#     sn_probs = np.array([[p, 1-p] for p in sn])
-#     yt_sn = np.argmax(yt, axis=1)
-#     yt_sn[yt_sn != 1] = 0
-#     sn_labels = yt_sn
-    
-#     # Get binary outputs for AGN classification
-#     agn = yp[:,2]
-#     agn_probs = np.array([[p, 1-p] for p in agn])
-#     yt_agn = np.argmax(yt, axis=1)
-#     yt_agn[yt_agn != 2] = 0
-#     yt_agn[yt_agn == 2] = 1
-#     agn_labels = yt_agn
-    
-#     roc_vs = roc_curve(vs_labels, yp[:,0])
-#     roc_sn = roc_curve(sn_labels, yp[:,1])
-#     roc_agn = roc_curve(agn_labels, yp[:,2])
-    
-#     return roc_vs, roc_sn, roc_agn
 
 @click.command()
 @click.option("-d", "--data-dir", required=True, help="Specify the directory where the data is stored")
@@ -211,9 +138,6 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
     # Expect_partial would silence the warnings.  
     # A better solution would be to only save the variables required for inference when training: saver = tf.train.Saver(tf.model_variables())  
     m_best.load_weights(weights_path).expect_partial() 
-
-    # Predict validation set
-    y_pred = m_best.predict(X_val)
 
     # Predict validation set
     y_pred_val = m_best.predict(X_val)
