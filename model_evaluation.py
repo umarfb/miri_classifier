@@ -119,8 +119,7 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
                 'f1':model_eval[2],
                 'f1_macro':f1_macro,
                 'auc_macro':auc_macro,
-    }
-        
+    }     
         d = {**params, **scores}
         results.append(d)
 
@@ -132,7 +131,7 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
     best_model_name = [str(best_model[i]) for i in range(7)]
 
     model_path = os.path.join(model_dir, '_'.join(best_model_name), "trained_model.h5")
-    weights_path = os.path.join(model_dir, '_'.join(best_model_name), "model_weights/training/cp.ckpt")
+    weights_path = os.path.join(model_dir, '_'.join(best_model_name), "model_weights", "training", "cp.ckpt")
 
     m_best = tf.keras.models.load_model(model_path, compile=False)
 
