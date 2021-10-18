@@ -50,6 +50,27 @@ def load_model(model_path, weights_path):
     model.load_weights(weights_path).expect_partial() 
     return model
 
+
+def evaluate_model(model, X_val, y_val):
+    # Evaluate model on validation set
+    model_eval = rnntools.evaluate_model(model, X_val, y_val, batch_size=128, verbose=1)
+    
+    # Calculate macro f1 score
+    f1_macro = f1_score(np.argmax(y_val, axis=1),
+                        np.argmax(model.predict(X_val), axis=1),
+                        average='macro')
+    
+    # Calulcate area under ROC curve
+    if y_val.shape[1] == 2:
+        auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
+                            model.predict(X_val)[:,0])
+
+    else: 
+        auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
+                            model.predict(X_val),
+                            average='macro', multi_class='ovo')
+    return model_eval, f1_macro, auc_macro
+
 @click.command()
 @click.option("-d", "--data-dir", required=True, help="Specify the directory where the data is stored")
 @click.option("-m", "--model_dir", required=True, help="Specify the directory where the model is stored")
@@ -90,24 +111,7 @@ def main(data_dir:str, model_dir:str, labels:List[str]):
         weights_path = os.path.join(model_dir, model_file, "model_weights", "training", "cp.ckpt")
         
         model = load_model(model_path, weights_path)
-        
-        # Evaluate model on validation set
-        model_eval = rnntools.evaluate_model(model, X_val, y_val, batch_size=128, verbose=1)
-        
-        # Calculate macro f1 score
-        f1_macro = f1_score(np.argmax(y_val, axis=1),
-                            np.argmax(model.predict(X_val), axis=1),
-                            average='macro')
-        
-        # Calulcate area under ROC curve
-        if y_val.shape[1] == 2:
-            auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
-                                model.predict(X_val)[:,0])
-
-        else: 
-            auc_macro = roc_auc_score(np.argmax(y_val, axis=1),
-                                model.predict(X_val),
-                                average='macro', multi_class='ovo')
+        model_eval, f1_macro, auc_macro = evaluate_model(model, X_val, y_val)
             
         # Get evaluation scores
         scores = {'loss':model_eval[0],
