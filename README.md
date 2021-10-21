@@ -6,6 +6,16 @@ An example dataset is included in `data/sample_data`. The data contains examples
 
 Example trained models are included in `trained_models`.
 
+## Building and running the Dockerfile
+
+Buid a docker and run it 
+
+```
+# cd to the rnn_classifier's directory 
+cd rnn_classifier
+docker build . --tag rnn_classifier
+docker run -it rnn_classifier
+```
 
 ## Training models
 
