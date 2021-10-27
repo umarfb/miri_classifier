@@ -39,7 +39,7 @@ This will train a grid of models, and save them to a folder called `trained_mode
 
 Within each configuration folder, there will be folders named according to the model hyperparameters e.g. `32_0.2_25_1.0_0.0001_0.01_50` which contain the trained models with those hyperparameters. There is also a `.csv` file named `training_results.csv` tabulating the F1 score and accuracy for models trained with each set of hyperparameters.
 
-To train models without including additional metadata, and just use sequential/time-series data, add `--mixed False` or `-mi False`.
+To train models without including additional metadata, and just use sequential/time-series data, add `--mixed False` or `-mi False`. The default value is set to True, where the model will ingest both sequential/time-series data and additional metadata.
 
 
 ## Evaluating trained models
