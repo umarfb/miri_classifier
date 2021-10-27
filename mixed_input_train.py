@@ -223,7 +223,7 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
 @click.option("-c", "--config-yaml", required=True, type=click.Path(exists=True, file_okay=True, dir_okay=False), help="Config YAML file for grid search")
 @click.option("-v", "--verbose", count=True, default=1)
 @click.option("-e", "--epochs", type=int, default=5)
-@click.option("-mi", "--mixed", required=True, type=bool, help="Specify whether to use the mixed input version or not")
+@click.option("-mi", "--mixed", type=bool, help="Specify whether to use the mixed input version or not", default=True)
 def main(data_dir: str, config_yaml: str, verbose: int, epochs: int, mixed: bool):
     # Enable XLA
     tf.config.optimizer.set_jit(True)
