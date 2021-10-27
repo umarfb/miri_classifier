@@ -75,19 +75,27 @@ def evaluate_model(model, X_val, y_val):
 @click.option("-d", "--data-dir", required=True, help="Specify the directory where the data is stored")
 @click.option("-m", "--model_dir", required=True, help="Specify the directory where the model is stored")
 @click.option("-l", "--labels", required=True, multiple=True, help="Specify class labels - repeat this option for each class")
-def main(data_dir:str, model_dir:str, labels:List[str]):
+@click.option("-mi", "--mixed", required=True, type=bool, help="Specify whether to use the mixed input version or not")
+def main(data_dir:str, model_dir:str, labels:List[str], mixed: bool):
     logger.info("Loading data ...")
 
+    # Load preprocessed data
     X_val_time = np.load("data/{}/validation_time_features.npy".format(data_dir))
-    X_val_contextual = np.load("data/{}/validation_contextual_features.npy".format(data_dir))
+    if mixed == True: # Load in additional metadata if mixed flag is true
+        X_val_contextual = np.load("data/{}/validation_contextual_features.npy".format(data_dir))
+        X_val = (X_val_time, X_val_contextual)
+    else:
+        X_val = X_val_time
     y_val = np.load("data/{}/validation_labels.npy".format(data_dir))
-    X_val = (X_val_time, X_val_contextual)
-
+    
     X_test_time = np.load("data/{}/test_time_features.npy".format(data_dir))
-    X_test_contextual = np.load("data/{}/test_contextual_features.npy".format(data_dir))
+    if mixed == True: # Load in additional metadata if mixed flag is true
+        X_test_contextual = np.load("data/{}/test_contextual_features.npy".format(data_dir))
+        X_test = (X_test_time, X_test_contextual)
+    else:
+        X_test = X_test_time
     y_test = np.load("data/{}/test_labels.npy".format(data_dir))
-    X_test = (X_test_time, X_test_contextual)
-
+    
     # Get directory where trained models are saved
     model_dir += '/'
     model_files = next(os.walk(model_dir))[1]
