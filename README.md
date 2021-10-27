@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This recurrent neural network (RNN) deep learning model uses supervised learning to classify time-series/sequential data into predefined separate classes. It was initially designed to classify different classes of astronomical objects observed by the Gravitational-wave Optical Transient Observer survey telescope.
+This recurrent neural network (RNN) deep learning model uses supervised learning to classify time-series/sequential data into predefined separate classes. It was initially designed to classify different classes of astronomical objects observed by the Gravitational-wave Optical Transient Observer (GOTO) survey telescope.
 
 This model was designed to handle class imbalance in supervised classification, without the need for data augmentation methods. The classifier uses weighted loss functions (cross entropy and focal loss) to account for class imbalance and handle classifying rare events in the data.
 
