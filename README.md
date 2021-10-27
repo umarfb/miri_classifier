@@ -1,10 +1,12 @@
 # rnn-classifier
 
-A Recurrent Neural Network (RNN) classifier designed to classify astronomical time-series data.
+## Introduction
 
-An example dataset is included in `data/sample_data`. The data contains examples of simulated time-series data with errors (noise), separated into two classes (class labels 0 and 1).
+This recurrent neural network (RNN) deep learning model uses supervised learning to classify time-series/sequential data into predefined separate classes. It was initially designed to classify different classes of astronomical objects observed by the Gravitational-wave Optical Transient Observer survey telescope.
 
-Example trained models are included in `trained_models`.
+This model was designed to handle class imbalance in supervised classification, without the need for data augmentation methods. The classifier uses weighted loss functions (cross entropy and focal loss) to account for class imbalance and handle classifying rare events in the data.
+
+The model is also able to aggregate different types of data, with the option of feeding the model a sequential/time-series component and additional ‘metadata’ (additional features that are not necessarily time/sequence dependent). The classifier is able to learn deep representations from the mixed data type input to provide classifications.
 
 ## Building and running the Dockerfile
 
@@ -18,6 +20,10 @@ docker run -it rnn_classifier
 ```
 
 ## Training models
+
+An example dataset is included in `data/sample_data`. The data contains examples of simulated time-series data with errors (noise), separated into two classes (class labels 0 and 1).
+
+Example trained models are included in `trained_models`.
 
 To train a grid of models with the example data, run:
 
