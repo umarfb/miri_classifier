@@ -75,7 +75,7 @@ def evaluate_model(model, X_val, y_val):
 @click.option("-d", "--data-dir", required=True, help="Specify the directory where the data is stored")
 @click.option("-m", "--model_dir", required=True, help="Specify the directory where the model is stored")
 @click.option("-l", "--labels", required=True, multiple=True, help="Specify class labels - repeat this option for each class")
-@click.option("-mi", "--mixed", required=True, type=bool, help="Specify whether to use the mixed input version or not")
+@click.option("-mi", "--mixed", type=bool, help="Specify whether to use the mixed input version or not", default=True)
 def main(data_dir:str, model_dir:str, labels:List[str], mixed: bool):
     logger.info("Loading data ...")
 
