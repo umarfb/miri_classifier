@@ -23,7 +23,7 @@ logger = logging.getLogger("mixted_input_train")
 
 def create_recurrent_model(rnn_input_shape, dnn_input_shape, output_shape,
                            rnn_dim, final_dense_dim, dropout, regularization, mask_value,
-                           use_gru_instead_of_lstm: bool = False):
+                           use_gru_instead_of_lstm: bool = False, use_mixed_input: bool = True):
 
     # Create RNN branch
     rnn_input = tf.keras.layers.Input(shape=(rnn_input_shape))
@@ -45,19 +45,27 @@ def create_recurrent_model(rnn_input_shape, dnn_input_shape, output_shape,
     x1 = tf.keras.layers.BatchNormalization()(x1)
     x1 = tf.keras.models.Model(inputs=rnn_input, outputs=x1)
 
-    # Create DNN branch
-    dense_input = tf.keras.layers.Input(shape=(dnn_input_shape))
+    # If use_mixed_input = True, create a branch to take in additional metadata
+    if use_mixed_input:
+        # Create DNN branch
+        dense_input = tf.keras.layers.Input(shape=(dnn_input_shape))
 
-    # Combine the output of the two models
-    combined = tf.concat([x1.output, dense_input], axis=1)
-    x3 = tf.keras.layers.Dense(final_dense_dim, activation='sigmoid')(combined)
+        # Combine the output of the two models
+        combined = tf.concat([x1.output, dense_input], axis=1)
+        x3 = tf.keras.layers.Dense(final_dense_dim, activation='sigmoid')(combined)
+    else:
+        x3 = tf.keras.layers.Dense(final_dense_dim, activation='sigmoid')(x1.output)
+
     x3 = tf.keras.layers.Dropout(dropout)(x3)
     x3 = tf.keras.layers.BatchNormalization()(x3)
     x3 = tf.keras.layers.Dense(final_dense_dim, activation='sigmoid',
-                               kernel_regularizer=tf.keras.regularizers.l2(regularization))(x3)
+                            kernel_regularizer=tf.keras.regularizers.l2(regularization))(x3)
     x3 = tf.keras.layers.Dense(output_shape, activation='softmax')(x3)
 
-    model = tf.keras.models.Model(inputs=[x1.input, dense_input], outputs=x3)
+    if use_mixed_input:
+        model = tf.keras.models.Model(inputs=[x1.input, dense_input], outputs=x3)
+    else:
+        model = tf.keras.models.Model(inputs=x1.input, outputs=x3)
 
     return model
 
@@ -78,7 +86,8 @@ def plot_history(history):
 
 # Train a grid of models
 def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, mask_val, X_train,
-                     y_train, X_val, y_val, epochs, class_weights, param_grid, metrics, save_file_suffix, verbose):
+                     y_train, X_val, y_val, epochs, class_weights, param_grid, metrics, save_file_suffix, verbose,
+                     use_mixed):
     logger.info(f"Model configurations: {len(param_grid)}")
 
     # Go through parameter grid, train model, and get performance results
@@ -133,6 +142,10 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
         else:
             raise Exception(f"Invalid rnn_type, valid values: GRU and LSTM, got: {rnn_type}")
 
+        if use_mixed == False:
+            dnn_input_shape = None
+            use_mixed = False
+
         model = create_recurrent_model(
             rnn_input_shape=rnn_input_shape,
             dnn_input_shape=dnn_input_shape,
@@ -142,7 +155,8 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
             dropout=dropout,
             regularization=reg_l2,
             mask_value=mask_val,
-            use_gru_instead_of_lstm=use_gru)
+            use_gru_instead_of_lstm=use_gru,
+            use_mixed_input=use_mixed)
 
         # Initialize optimizer, use the Adam optimizer
         optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
@@ -152,8 +166,15 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
                       optimizer=optimizer, metrics=metrics)
 
         # Train the model, and save training history
-        history = model.fit([X_train[0], X_train[1]], y_train,
-                            validation_data=([X_val[0], X_val[1]], y_val),
+        if use_mixed == True:
+            train_data = [X_train[0], X_train[1]]
+            val_data = [X_val[0], X_val[1]]
+        else:
+            train_data = X_train
+            val_data = X_val
+
+        history = model.fit(train_data, y_train,
+                            validation_data=(X_val, y_val),
                             epochs=epochs, batch_size=batch_size, verbose=verbose, callbacks=[cp_callback])
 
         # Save plot
@@ -197,13 +218,13 @@ def train_model_grid(rnn_type, rnn_input_shape, dnn_input_shape, output_shape, m
     # Write results to .csv file
     results.to_csv(os.path.join(root, 'training_results.csv'), index=0)
 
-
 @click.command()
 @click.option("-d", "--data-dir", required=True, help="Specify the directory where the training and validation data are stored")
 @click.option("-c", "--config-yaml", required=True, type=click.Path(exists=True, file_okay=True, dir_okay=False), help="Config YAML file for grid search")
 @click.option("-v", "--verbose", count=True, default=1)
 @click.option("-e", "--epochs", type=int, default=5)
-def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
+@click.option("-mi", "--mixed", required=True, type=bool, help="Specify whether to use the mixed input version or not")
+def main(data_dir: str, config_yaml: str, verbose: int, epochs: int, mixed: bool):
     # Enable XLA
     tf.config.optimizer.set_jit(True)
 
@@ -226,21 +247,32 @@ def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
 
     # Load preprocessed data
     X_train_time = np.load('data/{}/train_time_features.npy'.format(data_dir))
-    X_train_contextual = np.load('data/{}/train_contextual_features.npy'.format(data_dir))
+    if mixed == True: # Load in additional metadata if mixed flag is true
+        X_train_contextual = np.load('data/{}/train_contextual_features.npy'.format(data_dir))
+        X_train = (X_train_time, X_train_contextual)
+    else:
+        X_train = X_train_time
     y_train = np.load('data/{}/train_labels.npy'.format(data_dir))
-    X_train = (X_train_time, X_train_contextual)
 
     X_val_time = np.load('data/{}/validation_time_features.npy'.format(data_dir))
-    X_val_contextual = np.load('data/{}/validation_contextual_features.npy'.format(data_dir))
+    if mixed == True: # Load in additional metadata if mixed flag is true
+        X_val_contextual = np.load('data/{}/validation_contextual_features.npy'.format(data_dir))
+        X_val = (X_val_time, X_val_contextual)
+    else:
+        X_val = X_val_time
     y_val = np.load('data/{}/validation_labels.npy'.format(data_dir))
-    X_val = (X_val_time, X_val_contextual)
 
-    # Print input and output dimensions
-    rnn_input_shape = (X_train[0].shape[1], X_train[0].shape[2])
-    logger.info(f"RNN input shape {rnn_input_shape}")
+    if mixed == True:
+        # Print input and output dimensions
+        rnn_input_shape = (X_train[0].shape[1], X_train[0].shape[2])
+        logger.info(f"RNN input shape {rnn_input_shape}")
 
-    dnn_input_shape = (X_train[1].shape[1])
-    logger.info(f"Dense network input shape {dnn_input_shape}")
+        dnn_input_shape = (X_train[1].shape[1])
+        logger.info(f"Dense network input shape {dnn_input_shape}")
+    else:
+        rnn_input_shape = (X_train.shape[1], X_train.shape[2])
+        dnn_input_shape = None
+        logger.info(f"RNN input shape {rnn_input_shape}")
 
     output_shape = y_train.shape[1]
     logger.info(f"Output shape {output_shape}")
@@ -294,25 +326,29 @@ def main(data_dir: str, config_yaml: str, verbose: int, epochs: int):
     train_model_grid(rnn_type='GRU', rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape,
                      output_shape=output_shape, mask_val=mask_val, X_train=X_train, y_train=y_train,
                      X_val=X_val, y_val=y_val, epochs=epochs, class_weights=class_weights,
-                     param_grid=param_grid_fl, metrics=metrics, save_file_suffix='-gru-fl', verbose=verbose)
+                     param_grid=param_grid_fl, metrics=metrics, save_file_suffix='-gru-fl', verbose=verbose,
+                     use_mixed=mixed)
 
     # Train LSTM models with focal loss
     train_model_grid(rnn_type='LSTM', rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape,
                      output_shape=output_shape, mask_val=mask_val, X_train=X_train, y_train=y_train,
                      X_val=X_val, y_val=y_val, epochs=epochs, class_weights=class_weights,
-                     param_grid=param_grid_fl, metrics=metrics, save_file_suffix='-lstm-fl', verbose=verbose)
+                     param_grid=param_grid_fl, metrics=metrics, save_file_suffix='-lstm-fl', verbose=verbose,
+                     use_mixed=mixed)
 
     # Train GRU models with cross entropy
     train_model_grid(rnn_type='GRU', rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape,
                      output_shape=output_shape, mask_val=mask_val, X_train=X_train, y_train=y_train,
                      X_val=X_val, y_val=y_val, epochs=epochs, class_weights=class_weights,
-                     param_grid=param_grid_ce, metrics=metrics, save_file_suffix='-gru-wce', verbose=verbose)
+                     param_grid=param_grid_ce, metrics=metrics, save_file_suffix='-gru-wce', verbose=verbose,
+                     use_mixed=mixed)
 
     # Train LSTM models with cross entropy
     train_model_grid(rnn_type='LSTM', rnn_input_shape=rnn_input_shape, dnn_input_shape=dnn_input_shape,
                      output_shape=output_shape, mask_val=mask_val, X_train=X_train, y_train=y_train,
                      X_val=X_val, y_val=y_val, epochs=epochs, class_weights=class_weights,
-                     param_grid=param_grid_ce, metrics=metrics, save_file_suffix='-lstm-wce', verbose=verbose)
+                     param_grid=param_grid_ce, metrics=metrics, save_file_suffix='-lstm-wce', verbose=verbose,
+                     use_mixed=mixed)
 
 
 if __name__ == '__main__':
