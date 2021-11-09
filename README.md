@@ -8,6 +8,14 @@ This model was designed to handle class imbalance in supervised classification, 
 
 The model is also able to aggregate different types of data, with the option of feeding the model a sequential/time-series component and additional ‘metadata’ (additional features that are not necessarily time/sequence dependent). The classifier is able to learn deep representations from the mixed data type input to provide classifications.
 
+## Applications
+The use of this classifier on data from the GOTO survey is reported in [Burhanudin et al. 2020](https://arxiv.org/pdf/2105.11169.pdf). Below are some results taken from the paper: a confusion matrix showing performance on classifying objects as either a variable star (VS), supernova (SN) or active galactic nuclei (AGN), and the area under the receiver operating characteristic curve (AUC) score evaluated with an increasing number of observations. Note the difference in the number of samples for variable stars (~30,000), supernovae (~60), and active galactic nuclei (~160).
+
+<p align="center">
+  <img src="https://github.com/RSE-Sheffield/rnn_classifier/blob/main/images/goto_results.png" width="960"/>
+</p>
+
+
 ## Model architecture
 
 The classifier uses a RNN to extract features from sequential/time-series data, which is then passed to a standard dense neural network where the feature-class mapping is learnt. The additional metadata is combined with features extracted from the RNN component before passing through the dense neural network.
@@ -56,3 +64,9 @@ The `trained_models/2021-9-20-1037-gru-fl` is the folder where the trained model
 This will evaluate the models, and tabulate the model hyperparameters with F1 score and accuracy into `experiment_results.csv` within the configuration folder. It will also create two confusion matrices (evaluated on the validation and test set).
 
 For models trained without additional metadata, add the `--mixed False` or `-mi False` flags as when training the models.
+
+## References
+Burhanudin et al.,
+*Light-curve classification with recurrent neural networks for GOTO: dealing with imbalanced data*,
+Monthly Notices of the Royal Astronomical Society, Volume 505, Issue 3, August 2021,
+Pages 4345–4361, https://doi.org/10.1093/mnras/stab1545
