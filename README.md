@@ -1,4 +1,6 @@
-# rnn-classifier
+# MIRI
+
+We present **MIRI**, a Mixed Input Recurrent neural network for Imbalanced learning.
 
 ## Introduction
 
