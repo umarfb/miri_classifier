@@ -10,11 +10,14 @@ The model is also able to aggregate different types of data, with the option of 
 
 ## Applications
 The use of this classifier on data from the GOTO survey is reported in [Burhanudin et al. 2020](https://arxiv.org/pdf/2105.11169.pdf). Below are some results taken from the paper: a confusion matrix showing performance on classifying objects as either a variable star (VS), supernova (SN) or active galactic nuclei (AGN), and the area under the receiver operating characteristic curve (AUC) score evaluated with an increasing number of observations. Note the difference in the number of samples for variable stars (~30,000), supernovae (~60), and active galactic nuclei (~160).
-
 <p align="center">
-  <img src="https://github.com/RSE-Sheffield/rnn_classifier/blob/main/images/goto_results.png" width="960"/>
+  <img src="https://github.com/RSE-Sheffield/rnn_classifier/blob/main/images/goto_results.png" width="860"/>
 </p>
 
+This classifier was also used on the ECG Heartbeat Categorization Dataset from [Kaggle](https://www.kaggle.com/shayanfazeli/heartbeat), to illustrate how this can be applied to datasets outside of astronomy.
+<p align="center">
+  <img src="https://github.com/RSE-Sheffield/rnn_classifier/blob/main/images/ecg_results.png" width="860"/>
+</p>
 
 ## Model architecture
 
