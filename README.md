@@ -34,6 +34,16 @@ docker build . --tag rnn_classifier
 docker run -it rnn_classifier
 ```
 
+## Preprocessing data
+
+The model requires a training, validation, and test set to begin training. The labels need to be in a [one-hot encoded](https://machinelearningmastery.com/why-one-hot-encode-data-in-machine-learning/) format.
+
+The labels should be saved as `.npy` files, name `x_labels.npy` where `x` is either `train`, `validation`, or `test`.
+
+The time-series features need to be formatted so that the input shape for each examples is `(steps, features)` where `steps` represents the number time-steps, and `features` represents the number of features at each time step. For sequences that have different lenghts, [masking](https://www.tensorflow.org/guide/keras/masking_and_padding) should be used - the mask value can be set in the config `.yaml` file. Time-series features should be saved as `.npy` files, named `x_time_features.npy` where `x` is either `train`, `validation`, or `test`.
+
+Metadata features need to be in the format `(features)` where `features` represents the number of features. Metadta features should be saved as `.npy` files, named `x_contextual_features.npy` where `x` is either `train`, `validation`, or `test`.
+
 ## Training models
 
 An example dataset is included in `data/sample_data`. The data contains examples of simulated time-series data with errors (noise), separated into two classes (class labels 0 and 1).
