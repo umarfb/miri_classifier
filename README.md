@@ -1,4 +1,4 @@
-<img src="https://github.com/umarfb/miri_classifier/blob/main/images/miri_logo_light_v2.png" width="360"/>
+<img src="https://github.com/umarfb/miri_classifier/blob/main/images/miri_logo_dark_v2.png" width="360"/>
 
 We present **MIRI**, a Mixed Input Recurrent neural network for Imbalanced learning.
 
