@@ -1,4 +1,4 @@
-# MIRI
+<img src="https://github.com/umarfb/miri_classifier/blob/main/images/miri_logo_dark_v2.png" width="360"/>
 
 We present **MIRI**, a Mixed Input Recurrent neural network for Imbalanced learning.
 
@@ -6,7 +6,7 @@ We present **MIRI**, a Mixed Input Recurrent neural network for Imbalanced learn
 
 This recurrent neural network (RNN) deep learning model uses supervised learning to classify time-series/sequential data into predefined separate classes. It was initially designed to classify different classes of astronomical objects observed by the Gravitational-wave Optical Transient Observer (GOTO) survey telescope.
 
-This model was designed to handle class imbalance in supervised classification, without the need for data augmentation methods. The classifier uses weighted loss functions (cross entropy and focal loss) to account for class imbalance and handle classifying rare events in the data.
+This model was designed to handle class imbalance in supervised classification, without the need for data augmentation methods. The classifier uses weighted loss functions, cross entropy and focal loss (Lin et al. 2017), to account for class imbalance and handle classifying rare events in the data.
 
 The model is also able to aggregate different types of data, with the option of feeding the model a sequential/time-series component and additional ‘metadata’ (additional features that are not necessarily time/sequence dependent). The classifier is able to learn deep representations from the mixed data type input to provide classifications.
 
@@ -85,3 +85,10 @@ Burhanudin et al.,
 *Light-curve classification with recurrent neural networks for GOTO: dealing with imbalanced data*,
 Monthly Notices of the Royal Astronomical Society, Volume 505, Issue 3, August 2021,
 Pages 4345–4361, https://doi.org/10.1093/mnras/stab1545
+
+Lin et al.,
+*Focal Loss for Dense Object Detection*,
+arXiv e-prints,
+2017,
+1708.02002,
+https://ui.adsabs.harvard.edu/abs/2017arXiv170802002L
