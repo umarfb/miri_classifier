@@ -1,2 +1,0 @@
-batch_size,dnn_dense_dim,dropout,final_dense_dim,gamma,learning_rate,lstm_dim,loss,categorical_accuracy,f1,f1_macro,auc_macro
-32,0.2,25,1.0,0.0001,0.01,50,0.4334927797317505,0.48571428656578064,0.7204082012176514,0.3269230769230769,0.03145424836601305
